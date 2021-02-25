@@ -2,12 +2,14 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/haozheyu/go_demo/HostMonitoringSystem/client/monitoring"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +26,7 @@ func ExportWeb(){ //应用监控处理
 		netstat *monitoring.NetStat
 		partstat []monitoring.PartitionsInfo
 		rep []byte
+    	export string
     )
 	http.HandleFunc("/monitor", func(writer http.ResponseWriter, request *http.Request) {
 		ip, err = monitoring.GetLocalIP()
@@ -42,5 +45,6 @@ func ExportWeb(){ //应用监控处理
 		}
 		writer.Write(rep)
 	})
-	http.ListenAndServe(":9192",nil)
+	export = strconv.Itoa(G_config.Export)
+	http.ListenAndServe(fmt.Sprintf(":%s",export),nil)
 }

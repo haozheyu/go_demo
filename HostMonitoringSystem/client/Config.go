@@ -10,6 +10,7 @@ type Config struct {
 	EtcdEndpoints []string `json:"etcdEndpoints"`
 	EtcdDialTimeout int `json:"etcdDialTimeout"`
 	Crontab string `json:"crontab"`
+	Export int `json:"export"`
 }
 
 var (
