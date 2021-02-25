@@ -1,4 +1,4 @@
-package master
+package server
 
 import (
 	"github.com/haozheyu/go_demo/crontab/common"

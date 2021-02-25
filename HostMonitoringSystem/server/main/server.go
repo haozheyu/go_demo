@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/haozheyu/go_demo/HostMonitoringSystem/server"
 	"runtime"
 	"time"
 )
@@ -36,7 +37,7 @@ func main() {
 	initEnv()
 
 	// 加载配置
-	if err = InitConfig(confFile); err != nil {
+	if err = server.InitConfig(confFile); err != nil {
 		goto ERR
 	}
 
