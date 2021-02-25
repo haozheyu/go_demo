@@ -66,6 +66,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\HostMonitoringSystem\server\ApiServer.go">
+          <value>
+            <Attribute>
+              <option name="separator" value="&#9;" />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
