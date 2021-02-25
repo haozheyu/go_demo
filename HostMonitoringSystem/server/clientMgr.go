@@ -2,9 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/haozheyu/go_demo/crontab/common"
+	"github.com/haozheyu/go_demo/HostMonitoringSystem/client/monitoring"
+	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
+	"log"
+	"strings"
 	"time"
 )
 
@@ -13,6 +19,19 @@ type WorkerMgr struct {
 	client *clientv3.Client
 	kv clientv3.KV
 	lease clientv3.Lease
+
+}
+
+type Message struct {
+	Timestamp time.Time `json:"timestamp"`
+	CPUInfo *monitoring.CpuInfo `json:"cpu_info"`
+	CPULoad *monitoring.CPULoad `json:"cpu_load"`
+	DiskIOStat []disk.IOCountersStat `json:"disk_io_stat"`
+	HostInfo *host.InfoStat `json:"host_info"`
+	VMStat *mem.VirtualMemoryStat `json:"vm_stat"`
+	NetStat *monitoring.NetStat `json:"net_stat"`
+	PartitionStat []monitoring.PartitionsInfo `json:"partition_stat"`
+	ProcessCount int32 `json:"process_count"`
 }
 
 var (
@@ -20,26 +39,32 @@ var (
 )
 
 // 获取在线worker列表
-func (workerMgr *WorkerMgr) ListWorkers() (workerArr []string, err error) {
+func (workerMgr *WorkerMgr) ListWorkers() (rests []map[string]Message, err error) {
 	var (
 		getResp *clientv3.GetResponse
 		kv *mvccpb.KeyValue
-		workerIP string
+		ip string
+		value []byte
+		msg Message
+		rest map[string]Message
 	)
 
-	// 初始化数组
-	workerArr = make([]string, 0)
-
 	// 获取目录下所有Kv
-	if getResp, err = workerMgr.kv.Get(context.TODO(), common.JOB_WORKER_DIR, clientv3.WithPrefix()); err != nil {
+	if getResp, err = workerMgr.kv.Get(context.TODO(), "/client/", clientv3.WithPrefix()); err != nil {
 		return
 	}
 
 	// 解析每个节点的IP
 	for _, kv = range getResp.Kvs {
-		// kv.Key : /cron/workers/192.168.2.1
-		workerIP = common.ExtractWorkerIP(string(kv.Key))
-		workerArr = append(workerArr, workerIP)
+		// kv.Key : /client/192.168.2.1
+		ip = strings.TrimPrefix(string(kv.Key), "/client/")
+		value = kv.Value
+		if err = json.Unmarshal(value, &msg);err !=nil {
+			log.Printf("clienMgr rest fail")
+		}
+		rest = make(map[string]Message)
+		rest[ip] = msg
+		rests = append(rests, rest)
 	}
 	return
 }

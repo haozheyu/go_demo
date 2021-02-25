@@ -1,4 +1,7 @@
 module github.com/haozheyu/go_demo
+
+go 1.16
+
 require (
 	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -7,6 +10,7 @@ require (
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-cmp v0.5.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
+	github.com/gorhill/cronexpr v0.0.0-20180427100037-88b0669f7d75 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect

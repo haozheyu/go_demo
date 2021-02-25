@@ -197,17 +197,17 @@ var (
 // 获取注册的client节点列表
 func handleWorkerList(resp http.ResponseWriter, req *http.Request) {
 	var (
-		workerArr []string
+		msg []map[string]Message
 		err error
 		bytes []byte
 	)
 
-	if workerArr, err = G_workerMgr.ListWorkers(); err != nil {
+	if msg, err = G_workerMgr.ListWorkers(); err != nil {
 		goto ERR
 	}
 
 	// 正常应答
-	if bytes, err = common.BuildResponse(0, "success", workerArr); err == nil {
+	if bytes, err = common.BuildResponse(0, "success", msg); err == nil {
 		resp.Write(bytes)
 	}
 	return
@@ -235,7 +235,7 @@ func InitApiServer() (err error){
 	//mux.HandleFunc("/job/list", handleJobList)
 	//mux.HandleFunc("/job/kill", handleJobKill)
 	//mux.HandleFunc("/job/log", handleJobLog)
-	mux.HandleFunc("/worker/list", handleWorkerList)
+	mux.HandleFunc("/worker/list", handleWorkerList) //获取注册节点
 
 	//  /index.html
 

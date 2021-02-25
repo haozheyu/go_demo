@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/haozheyu/go_demo/HostMonitoringSystem/server"
 	"runtime"
-	"time"
 )
 
 var (
@@ -42,29 +41,31 @@ func main() {
 	}
 
 	// 初始化服务发现模块
-	if err = InitWorkerMgr(); err != nil {
+	if err = server.InitWorkerMgr(); err != nil {
 		goto ERR
 	}
 
-	// 日志管理器
-	if err =InitLogMgr(); err != nil {
+	// 让其中指定节点执行命令
+	if err = server.InitJobMgr(); err != nil {
 		goto ERR
 	}
-
-	//  任务管理器
-	if err = InitJobMgr(); err != nil {
-		goto ERR
-	}
-
+	//
+	//// 日志管理器
+	//if err =InitLogMgr(); err != nil {
+	//	goto ERR
+	//}
+	//
+	////  任务管理器
+	//if err = InitJobMgr(); err != nil {
+	//	goto ERR
+	//}
+	//
 	// 启动Api HTTP服务
-	if err = InitApiServer(); err != nil {
+	if err = server.InitApiServer(); err != nil {
 		goto ERR
 	}
 
-	// 正常退出
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	select {}
 
 	return
 
