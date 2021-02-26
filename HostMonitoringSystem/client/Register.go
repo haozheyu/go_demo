@@ -38,7 +38,7 @@ var (
 	G_register *Register
 )
 
-// 注册到/client/IP, 并自动续租
+// 注册到/client/IP
 func (register *Register) keepOnline() {
 	var (
 		regKey string

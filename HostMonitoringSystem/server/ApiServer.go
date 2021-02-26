@@ -49,7 +49,7 @@ func handleExecJob(resp http.ResponseWriter, req *http.Request) {
 		goto ERR
 	}
 	// 5, {"code":0,"msg":"",count:1,"data":[{"ip":"127.0.0.1", },{}]
-	if bytes, err = common.BuildResponse(0, "success", oldJob); err == nil {
+	if bytes, err = common.BuildResponse(0, "上一个错误的结果是", oldJob); err == nil {
 		resp.Write(bytes)
 	}
 	return
@@ -133,10 +133,6 @@ func InitApiServer() (err error){
 	// 配置路由
 	mux = http.NewServeMux()
 	mux.HandleFunc("/job/exec", handleExecJob) //单个节点执行命令
-	//mux.HandleFunc("/job/delete", handleJobDelete)
-	//mux.HandleFunc("/job/list", handleJobList)
-	//mux.HandleFunc("/job/kill", handleJobKill)
-	//mux.HandleFunc("/job/log", handleJobLog)
 	mux.HandleFunc("/worker/node", handleWorkerInfo) //获取单个节点信息
 	mux.HandleFunc("/worker/list", handleWorkerList) //获取注册节点列表
 

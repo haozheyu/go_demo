@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/haozheyu/go_demo/HostMonitoringSystem/client"
 	"runtime"
-	"time"
 )
 
 var (
@@ -40,21 +39,18 @@ func main() {
 	if err = client.InitConfig(confFile); err != nil {
 		goto ERR
 	}
-
 	// 服务注册
 	go client.InitRegister()
     // 暴露web接口
 	go client.ExportWeb()
+	// 命令执行器
+	go client.RunExec()
 
-	//// 定时命令执行器
-	//if err = worker.InitJobMgr(); err != nil {
-	//	goto ERR
-	//}
+
+
 
 	// 正常退出
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	select { }
 
 	return
 

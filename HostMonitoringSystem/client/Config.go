@@ -11,6 +11,7 @@ type Config struct {
 	EtcdDialTimeout int `json:"etcdDialTimeout"`
 	Crontab string `json:"crontab"`
 	Export int `json:"export"`
+	BashDir string `json:"bashDir"`
 }
 
 var (
