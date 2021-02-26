@@ -31,7 +31,8 @@ func ExportWeb(){ //应用监控处理
 	http.HandleFunc("/monitor", func(writer http.ResponseWriter, request *http.Request) {
 		ip, err = monitoring.GetLocalIP()
 		resp.localIP = ip
-		resp.RegMassage.Timestamp = time.Now()
+		resp.RegMassage.Timestamp = time.Now().Unix()
+		resp.RegMassage.Ip = ip
 		if cpuinfo, err = monitoring.GetCpuInfo();err ==nil{resp.RegMassage.CPUInfo = cpuinfo}
 		if cpuload,err = monitoring.GetCpuLoad();err == nil{resp.RegMassage.CPULoad = cpuload}
 		if diskstat,err = monitoring.GetDiskIOInfo(); err == nil {resp.RegMassage.DiskIOStat= diskstat}

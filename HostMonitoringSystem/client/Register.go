@@ -22,7 +22,8 @@ type Register struct {
 	RegMassage Message
 }
 type Message struct {
-	Timestamp time.Time `json:"timestamp"`
+	Ip string `json:"ip"`
+	Timestamp int64 `json:"timestamp"`
 	CPUInfo *monitoring.CpuInfo `json:"cpu_info"`
 	CPULoad *monitoring.CPULoad `json:"cpu_load"`
 	DiskIOStat []disk.IOCountersStat `json:"disk_io_stat"`
@@ -52,7 +53,7 @@ func (register *Register) keepOnline() {
 		rep []byte
 	)
 	regKey = "/client/" + register.localIP
-	register.RegMassage.Timestamp = time.Now()
+	register.RegMassage.Timestamp = time.Now().Unix()
 	if cpuinfo, err = monitoring.GetCpuInfo();err ==nil{register.RegMassage.CPUInfo = cpuinfo}
 	if cpuload,err = monitoring.GetCpuLoad();err == nil{register.RegMassage.CPULoad = cpuload}
 	if diskstat,err = monitoring.GetDiskIOInfo(); err == nil {register.RegMassage.DiskIOStat= diskstat}
@@ -61,7 +62,10 @@ func (register *Register) keepOnline() {
 	if netstat,err = monitoring.GetNetStat();err == nil {register.RegMassage.NetStat = netstat}
 	if partstat,err = monitoring.GetPartitions();err == nil {register.RegMassage.PartitionStat = partstat}
 	register.RegMassage.ProcessCount = monitoring.RunProcessCount()
-	rep, err = json.Marshal(register.RegMassage)
+	register.RegMassage.Ip = register.localIP
+	if rep, err = json.Marshal(register.RegMassage);err !=nil {
+		log.Println("etcd put rep marshal fail")
+	}
 	// 注册到etcd
 	if _, err = register.kv.Put(context.TODO(), regKey, string(rep)); err != nil {
 		log.Println("node register fail")

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Golang主机监控系统</title>
+    <!-- bootstrap + jquery -->
+
+    <!-- vuejs  , reactjs , angular -->
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        pre {outline: 1px solid #ccc; white-space: pre-line; word-wrap: break-word;}
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <!-- 页头 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h1>管理后台<small>Golang主机监控系统</small></h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务列表 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default" style="margin-top: 20px">
+                <div class="panel-body">
+                    <table id="node-list"  class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>主机节点</th>
+                            <th>系统类型</th>
+                            <th>系统版本</th>
+                            <th>run_time/s</th>
+                            <th>核心数</th>
+                            <th>load</th>
+                            <th>内存/G</th>
+                            <th>mem_use/%</th>
+                            <th>net_conn</th>
+                            <th>process</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--  节点详情的模态框 -->
+<div id="node-info-modal" class="row modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">node 详情</h4>
+            </div>
+            <div class="modal-body">
+                <pre id="jsonShow"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<!--  节点执行命令模态框 -->
+<div id="node-exec-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <input type="text" disabled class="form-control" id="exec_ip">
+                        </div>
+                        <div class="form-group">
+                            <label for="command">shell命令</label>
+                            <input type="text" class="form-control" id="command" placeholder="shell命令">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="save-job">执行</button>
+                </div>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<!--  节点执行命令返回的模态框 -->
+<div id="exec-msg-modal" class="modal fade" tabindex="-1" role="dialog">
+    <pre id="exec-msg"></pre>
+</div><!-- /.modal -->
+
+<script>
+    // 页面加载完成后, 回调函数
+    $(document).ready(function() {
+        // 时间格式化函数
+        function timeFormat(millsecond) {
+            // 前缀补0: 2018-08-07 08:01:03.345
+            function paddingNum(num, n) {
+                var len = num.toString().length
+                while (len < n) {
+                    num = '0' + num
+                    len++
+                }
+                return num
+            }
+            var date = new Date(millsecond)
+            var year = date.getFullYear()
+            var month = paddingNum(date.getMonth() + 1, 2)
+            var day = paddingNum(date.getDate(), 2)
+            var hour = paddingNum(date.getHours(), 2)
+            var minute = paddingNum(date.getMinutes(), 2)
+            var second = paddingNum(date.getSeconds(), 2)
+            var millsecond = paddingNum(date.getMilliseconds(), 3)
+            return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second + "." + millsecond
+        }
+
+        // 1, 绑定按钮的事件处理函数
+        // 用javascript委托机制, DOM事件冒泡的一个关键原理
+        // 详情按钮
+        $('#node-list').on('click', ".node-info-click",function(event) {
+            //根据拿到的IP进行url请求
+            var node_info = {
+                "url": "/worker/node",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "data": {
+                    "ip": $(this).parents('tr').children('.node-ip').text()
+                }
+            };
+            $.ajax(node_info).done(function (response) {
+                // 根据返回的结果给dom添加元素
+                $('#jsonShow').html(jsonShowFn(response))
+                // document.getElementById('jsonShow').innerText= response ;
+            });
+
+            // 弹出模态框
+            $('#node-info-modal').modal('show')
+        })
+        // 执行命令按钮
+        $('#node-list').on('click', ".node-exec-click",function(event) {
+            // 将IP传给模态框
+            var ip = $(this).parents('tr').children('.node-ip').text()
+            $("#exec_ip").attr("value",ip)
+            // 弹出模态框
+            $('#node-exec-modal').modal('show')
+        })
+        // 保存任务
+        $('#save-job').on('click', function() {
+            var node_exec = {
+                "url": "/job/exec",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "data": {
+                    "ip": $('#exec_ip').val(),
+                    "exec":  $('#command').val()
+                }
+            };
+            $.ajax(node_exec).done(function (response) {
+                // 操作完成弹出执行返回的模态框
+                $('#node-exec-modal').modal('hide')
+                document.getElementById('exec-msg').innerText= response ;
+                $('#exec-msg-modal').modal('show')
+            });
+        })
+
+        // 2，定义一个函数，用于刷新任务列表
+        function rebuildJobList() {
+            // /job/list
+            $.ajax({
+                url: '/worker/list',
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.code != 0) {  // 服务端出错了
+                        return
+                    }
+                    // node数组
+                    var nodelist = resp.data
+                    // 清理列表
+                    $('#node-list tbody').empty()
+                    // 遍历任务, 填充table
+                    for (var i = 0; i < nodelist.length; ++i) {
+                        var node = nodelist[i];
+                        var tr = $("<tr>")
+                        tr.append($('<td class="node-ip">').html(node.ip))
+                        tr.append($('<td class="node-os">').html(node.host_info.os))
+                        tr.append($('<td class="node-platform">').html(node.host_info.platform))
+                        tr.append($('<td class="node-uptime">').html(node.host_info.uptime))
+                        tr.append($('<td class="node-cores">').html(node.cpu_info.cores))
+                        tr.append($('<td class="node-cpu-load">').html(node.cpu_load.TotalPercent))
+                        tr.append($('<td class="node-mem">').html(node.vm_stat.total/1024/1024/1024))
+                        tr.append($('<td class="node-mem-load">').html(node.vm_stat.usedPercent))
+                        tr.append($('<td class="node-conn">').html(node.net_stat.NetConnectionCount))
+                        tr.append($('<td class="node-process">').html(node.process_count))
+                        var toolbar = $('<div class="btn-toolbar">')
+                            .append('<button class="btn btn-info node-info-click">详细信息</button>')
+                            .append('<button class="btn btn-danger node-exec-click">执行命令</button>')
+                        tr.append($('<td>').append(toolbar))
+                        $("#node-list tbody").append(tr)
+                    }
+                }
+            })
+        }
+        rebuildJobList()
+        // json解析函数
+        function jsonShowFn(json){
+            if (!json.match("^\{(.+:.+,*){1,}\}$")) {
+                return json           //判断是否是json数据，不是直接返回
+            }
+
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+                var cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+    })
+</script>
+</body>
+</html>

@@ -10,7 +10,6 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -23,7 +22,8 @@ type WorkerMgr struct {
 }
 
 type Message struct {
-	Timestamp time.Time `json:"timestamp"`
+	Ip string `json:"ip"`
+	Timestamp int64 `json:"timestamp"`
 	CPUInfo *monitoring.CpuInfo `json:"cpu_info"`
 	CPULoad *monitoring.CPULoad `json:"cpu_load"`
 	DiskIOStat []disk.IOCountersStat `json:"disk_io_stat"`
@@ -39,14 +39,12 @@ var (
 )
 
 // 获取在线worker列表
-func (workerMgr *WorkerMgr) ListWorkers() (rests []map[string]Message, err error) {
+func (workerMgr *WorkerMgr) ListWorkers() (rests []Message, err error) {
 	var (
 		getResp *clientv3.GetResponse
 		kv *mvccpb.KeyValue
-		ip string
 		value []byte
 		msg Message
-		rest map[string]Message
 	)
 
 	// 获取目录下所有Kv
@@ -57,14 +55,37 @@ func (workerMgr *WorkerMgr) ListWorkers() (rests []map[string]Message, err error
 	// 解析每个节点的IP
 	for _, kv = range getResp.Kvs {
 		// kv.Key : /client/192.168.2.1
-		ip = strings.TrimPrefix(string(kv.Key), "/client/")
+		//ip = strings.TrimPrefix(string(kv.Key), "/client/")
 		value = kv.Value
 		if err = json.Unmarshal(value, &msg);err !=nil {
-			log.Printf("clienMgr rest fail")
+			log.Printf("clienMgr rest fail",err)
 		}
-		rest = make(map[string]Message)
-		rest[ip] = msg
-		rests = append(rests, rest)
+		rests = append(rests, msg)
+	}
+	return
+}
+
+// 获取单个client信息
+func (client *WorkerMgr) ClientInfo(ip string)(rest *Message,err error){
+	var (
+		getResp *clientv3.GetResponse
+		kv *mvccpb.KeyValue
+		value []byte
+	)
+
+	// 获取目录下所有Kv
+	if getResp, err = client.kv.Get(context.TODO(), "/client/"+ip); err != nil {
+		return
+	}
+
+	// 解析每个节点的IP
+	for _, kv = range getResp.Kvs {
+		// kv.Key : /client/192.168.2.1
+		//ip = strings.TrimPrefix(string(kv.Key), "/client/")
+		value = kv.Value
+		if err = json.Unmarshal(value, &rest);err !=nil {
+			log.Printf("clienMgr rest fail",err)
+		}
 	}
 	return
 }

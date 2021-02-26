@@ -15,6 +15,11 @@ type JobMgr struct {
 	kv     clientv3.KV
 	lease  clientv3.Lease
 }
+// 任务保存
+type JobSave struct {
+	IP string  `json:"ip"`
+	Exec string `json:"exec"`
+}
 
 var (
 	// 单例
@@ -55,33 +60,28 @@ func InitJobMgr() (err error) {
 }
 
 // 保存任务
-func (jobMgr *JobMgr) SaveJob(job *common.Job) (oldJob *common.Job, err error) {
+func (jobMgr *JobMgr) SaveJob(job string,ip string) (oldJob string, err error) {
 	// 把任务保存到/cron/jobs/任务名 -> json
 	var (
 		jobKey    string
-		jobValue  []byte
 		putResp   *clientv3.PutResponse
-		oldJobObj common.Job
+		savejob   JobSave
+		savejobbyte []byte
 	)
 
 	// etcd的保存key
-	jobKey = common.JOB_SAVE_DIR + job.Name
-	// 任务信息json
-	if jobValue, err = json.Marshal(job); err != nil {
-		return
-	}
+	jobKey = "/job/exec"
 	// 保存到etcd
-	if putResp, err = jobMgr.kv.Put(context.TODO(), jobKey, string(jobValue), clientv3.WithPrevKV()); err != nil {
+	savejob.IP = ip
+	savejob.Exec = job
+	if savejobbyte, err = json.Marshal(savejob);err != nil {return "", err}
+	if putResp, err = jobMgr.kv.Put(context.TODO(), jobKey, string(savejobbyte), clientv3.WithPrevKV()); err != nil {
 		return
 	}
 	// 如果是更新, 那么返回旧值
 	if putResp.PrevKv != nil {
 		// 对旧值做一个反序列化
-		if err = json.Unmarshal(putResp.PrevKv.Value, &oldJobObj); err != nil {
-			err = nil
-			return
-		}
-		oldJob = &oldJobObj
+		oldJob = string(putResp.PrevKv.Value)
 	}
 	return
 }
