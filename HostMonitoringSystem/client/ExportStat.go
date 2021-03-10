@@ -28,7 +28,7 @@ func ExportWeb(){ //应用监控处理
 		rep []byte
     	export string
     )
-	http.HandleFunc("/monitor", func(writer http.ResponseWriter, request *http.Request) {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		ip, err = monitoring.GetLocalIP()
 		resp.localIP = ip
 		resp.RegMassage.Timestamp = time.Now().Unix()

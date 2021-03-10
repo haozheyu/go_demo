@@ -40,11 +40,11 @@ func main() {
 		goto ERR
 	}
 	// 服务注册
-	go client.InitRegister()
+	// go client.InitRegister()
     // 暴露web接口
 	go client.ExportWeb()
 	// 命令执行器
-	go client.RunExec()
+	// go client.RunExec()
 
 
 
